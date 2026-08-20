@@ -1,0 +1,5 @@
+.env
+docs/api-notes-raw/
+.idea/
+*.iml
+/keenetic-policy-switcher

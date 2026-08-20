@@ -1,0 +1,46 @@
+[
+  {
+    "ip": {
+      "hotspot": {
+        "host": {
+          "permit": {
+            "status": [
+              {
+                "status": "message",
+                "code": "19007440",
+                "ident": "Hotspot::Manager",
+                "message": "rule \"permit\" applied to host \"a4:c3:65:12:34:8f\"."
+              }
+            ]
+          },
+          "policy": {
+            "status": [
+              {
+                "status": "message",
+                "code": "19007840",
+                "ident": "Hotspot::Manager",
+                "message": "policy \"Policy2\" applied to host \"a4:c3:65:12:34:8f\"."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "system": {
+      "configuration": {
+        "save": {
+          "status": [
+            {
+              "status": "message",
+              "code": "8912996",
+              "ident": "Core::System::StartupConfig",
+              "message": "saving (http/rci)."
+            }
+          ]
+        }
+      }
+    }
+  }
+]

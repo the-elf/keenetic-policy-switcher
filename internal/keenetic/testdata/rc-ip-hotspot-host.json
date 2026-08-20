@@ -1,0 +1,25 @@
+[
+  {
+    "access": "permit",
+    "mac": "a4:c3:65:12:34:8f",
+    "permit": true,
+    "policy": "Policy0"
+  },
+  {
+    "access": "permit",
+    "mac": "b8:27:eb:d0:47:04",
+    "permit": true,
+    "policy": "Policy1"
+  },
+  {
+    "access": "permit",
+    "mac": "0a:59:ce:1e:b9:84",
+    "permit": true,
+    "policy": "Policy0"
+  },
+  {
+    "access": "permit",
+    "mac": "5c:e9:1e:a3:df:85",
+    "permit": true
+  }
+]

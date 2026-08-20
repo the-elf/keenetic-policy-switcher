@@ -1,0 +1,12 @@
+services:
+  keenetic-policy-switcher:
+    build: .
+    env_file: .env
+    ports:
+      # Published on all host interfaces so a phone on the home LAN can
+      # reach it (the main use case). IMPORTANT: do not forward this port
+      # to the internet through the router — the service has full
+      # administrative access to the router. Keep the host on a trusted
+      # LAN, not facing the internet.
+      - "8080:8080"
+    restart: unless-stopped

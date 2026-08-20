@@ -1,0 +1,20 @@
+[
+  {
+    "ip": {
+      "hotspot": {
+        "host": {
+          "policy": {
+            "status": [
+              {
+                "status": "error",
+                "code": "19007841",
+                "ident": "Hotspot::Manager",
+                "message": "policy \"PolicyNope\" not found."
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

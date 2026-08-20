@@ -1,0 +1,22 @@
+{
+  "Policy0": {
+    "description": "With VPN",
+    "permit": [
+      { "enabled": true, "interface": "Wireguard7" },
+      { "enabled": false, "interface": "GigabitEthernet1", "no": true }
+    ]
+  },
+  "Policy1": {
+    "description": "ru_vpn",
+    "permit": [
+      { "enabled": true, "interface": "Wireguard4" },
+      { "enabled": false, "interface": "GigabitEthernet1", "no": true }
+    ]
+  },
+  "Policy2": {
+    "description": "No VPN",
+    "permit": [
+      { "enabled": true, "interface": "GigabitEthernet1" }
+    ]
+  }
+}
