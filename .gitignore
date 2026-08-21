@@ -3,3 +3,5 @@ docs/api-notes-raw/
 .idea/
 *.iml
 /keenetic-policy-switcher
+/favorites.json
+/data/

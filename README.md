@@ -62,6 +62,7 @@ port forward from the internet.
 | `KEENETIC_PASSWORD` | yes | Router admin password |
 | `LISTEN_ADDR` | no (default `:8080`) | Address and port the app listens on |
 | `REQUEST_TIMEOUT` | no (default `10s`) | Timeout for requests to the router |
+| `FAVORITES_FILE` | no (default `favorites.json`) | Path to the JSON file storing the shared favorites list. `docker-compose.yml` sets this to `/data/favorites.json` and mounts `./data` for persistence — no need to set it by hand for Docker. |
 
 Variables are read from the environment (`os.Getenv`). For local development you
 can put them in `.env`, which is loaded softly via `godotenv`: a missing file is
@@ -75,7 +76,7 @@ validated at startup — if any is missing, the app exits with an error naming i
 
 All responses are JSON; errors carry `{"error": "..."}`.
 
-- `GET /api/devices` → `{"router_online": true, "devices": [{"mac", "name", "ip", "online", "policy_id"}]}`.
+- `GET /api/devices` → `{"router_online": true, "devices": [{"mac", "name", "ip", "online", "policy_id", "favorite"}]}`.
   An unreachable router is not an HTTP error here: the response comes back with
   `router_online: false` so the UI can show a banner instead of breaking.
 - `GET /api/policies` → `{"policies": [{"id", "name"}]}`, including the synthetic
@@ -84,6 +85,11 @@ All responses are JSON; errors carry `{"error": "..."}`.
   `{"ok": true, "mac": ..., "policy_id": ...}`. Use `policy_id: "default"` to
   reset the device to the router's default policy. Every write is followed by a
   configuration save in the same batch, so it survives a router reboot.
+- `POST /api/devices/{mac}/favorite` with `{"favorite": true}` →
+  `{"ok": true, "mac": ..., "favorite": true}`. Marks or unmarks a device as a
+  favorite; favorites are stored server-side in `FAVORITES_FILE` and shared by
+  every browser that opens the page. The UI shows favorited devices at the
+  top of the list and collapses the rest behind an "Other devices" dropdown.
 
 ## Tests
 
@@ -109,6 +115,7 @@ golangci-lint run
 cmd/keenetic-policy-switcher/main.go  # config, server startup, routes
 internal/keenetic/                    # RCI client: auth, reads, writes
 internal/api/                         # HTTP API for the frontend (/api/*)
+internal/favorites/                   # JSON-file-backed favorites store
 web/                                  # index.html + app.js + style.css, embedded
 docs/api-notes.md                     # RCI paths and formats observed on a real router
 ```

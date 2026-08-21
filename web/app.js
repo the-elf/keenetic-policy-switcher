@@ -4,7 +4,8 @@ const AUTO_REFRESH_MS = 15000;
 
 const state = {
   policies: [], // [{id, name}]
-  devices: [],  // [{mac, name, ip, online, policy_id}]
+  devices: [],  // [{mac, name, ip, online, policy_id, favorite}]
+  othersOpen: false, // whether the "other devices" <details> was expanded by the user
 };
 
 const elements = {
@@ -55,8 +56,38 @@ function renderDevices() {
     return;
   }
 
-  for (const device of state.devices) {
+  const favorites = state.devices.filter((d) => d.favorite);
+  const others = state.devices.filter((d) => !d.favorite);
+
+  // No favorites set yet: show the flat list, same as before this feature
+  // existed — nothing to hide behind a dropdown on a fresh install.
+  if (favorites.length === 0) {
+    for (const device of others) {
+      elements.list.appendChild(renderDeviceCard(device));
+    }
+    return;
+  }
+
+  for (const device of favorites) {
     elements.list.appendChild(renderDeviceCard(device));
+  }
+
+  if (others.length > 0) {
+    const details = document.createElement("details");
+    details.className = "other-devices";
+    details.open = state.othersOpen;
+    details.addEventListener("toggle", () => {
+      state.othersOpen = details.open;
+    });
+
+    const summary = document.createElement("summary");
+    summary.textContent = `Other devices (${others.length})`;
+    details.appendChild(summary);
+
+    for (const device of others) {
+      details.appendChild(renderDeviceCard(device));
+    }
+    elements.list.appendChild(details);
   }
 }
 
@@ -83,6 +114,7 @@ function deviceType(device) {
 function renderDeviceCard(device) {
   const node = elements.cardTemplate.content.cloneNode(true);
   const card = node.querySelector(".device-card");
+  const favoriteBtn = node.querySelector(".device-card__favorite");
   const status = node.querySelector(".device-card__status");
   const name = node.querySelector(".device-card__name");
   const meta = node.querySelector(".device-card__meta");
@@ -96,6 +128,10 @@ function renderDeviceCard(device) {
   name.textContent = device.name || device.mac;
   meta.textContent = `${device.ip} · ${device.mac}`;
 
+  favoriteBtn.classList.toggle("device-card__favorite--active", device.favorite);
+  favoriteBtn.setAttribute("aria-pressed", device.favorite ? "true" : "false");
+  favoriteBtn.addEventListener("click", () => onFavoriteToggle(device, favoriteBtn));
+
   for (const policy of state.policies) {
     const option = document.createElement("option");
     option.value = policy.id;
@@ -107,6 +143,24 @@ function renderDeviceCard(device) {
   select.addEventListener("change", () => onPolicyChange(device, select));
 
   return node;
+}
+
+async function onFavoriteToggle(device, button) {
+  const newValue = !device.favorite;
+
+  button.disabled = true;
+  try {
+    const result = await fetchJSON(`/api/devices/${encodeURIComponent(device.mac)}/favorite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: newValue }),
+    });
+    device.favorite = result.favorite;
+    renderDevices();
+  } catch (err) {
+    showToast(`Failed to update favorite: ${err.message}`, "error");
+    button.disabled = false;
+  }
 }
 
 async function onPolicyChange(device, select) {

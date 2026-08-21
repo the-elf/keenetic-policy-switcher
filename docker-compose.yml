@@ -2,6 +2,10 @@ services:
   keenetic-policy-switcher:
     build: .
     env_file: .env
+    environment:
+      # A directory, not a file, is bind-mounted below (see the volumes
+      # comment for why) — point the app at a file inside it.
+      - FAVORITES_FILE=/data/favorites.json
     ports:
       # Published on all host interfaces so a phone on the home LAN can
       # reach it (the main use case). IMPORTANT: do not forward this port
@@ -9,4 +13,12 @@ services:
       # administrative access to the router. Keep the host on a trusted
       # LAN, not facing the internet.
       - "8080:8080"
+    volumes:
+      # Persists the favorites list across container recreation. Mounting
+      # the *file* directly (`./favorites.json:/favorites.json`) doesn't
+      # work on a fresh clone: Docker creates a missing bind-mount source
+      # as a directory, not a file, which makes the app fail to start. A
+      # directory doesn't have that ambiguity — Docker creates `./data` as
+      # a directory correctly, and the app creates the file inside it.
+      - ./data:/data
     restart: unless-stopped

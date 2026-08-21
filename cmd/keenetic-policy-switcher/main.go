@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"keenetic-policy-switcher/internal/api"
+	"keenetic-policy-switcher/internal/favorites"
 	"keenetic-policy-switcher/internal/keenetic"
 	"keenetic-policy-switcher/web"
 )
@@ -33,8 +34,13 @@ func main() {
 		log.Fatalf("keenetic client: %v", err)
 	}
 
+	favoritesStore, err := favorites.New(cfg.FavoritesFile)
+	if err != nil {
+		log.Fatalf("favorites store (%s): %v", cfg.FavoritesFile, err)
+	}
+
 	mux := http.NewServeMux()
-	api.NewHandler(routerClientAdapter{client}, nil).Register(mux)
+	api.NewHandler(routerClientAdapter{client}, favoritesStore, nil).Register(mux)
 	mux.Handle("/", http.FileServerFS(web.FS))
 
 	srv := &http.Server{
@@ -94,6 +100,7 @@ type config struct {
 	KeeneticPassword string
 	ListenAddr       string
 	RequestTimeout   time.Duration
+	FavoritesFile    string
 }
 
 const defaultRequestTimeout = 10 * time.Second
@@ -105,6 +112,7 @@ func loadConfig() (config, error) {
 		KeeneticPassword: os.Getenv("KEENETIC_PASSWORD"),
 		ListenAddr:       os.Getenv("LISTEN_ADDR"),
 		RequestTimeout:   defaultRequestTimeout,
+		FavoritesFile:    os.Getenv("FAVORITES_FILE"),
 	}
 
 	for _, req := range []struct {
@@ -122,6 +130,10 @@ func loadConfig() (config, error) {
 
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"
+	}
+
+	if cfg.FavoritesFile == "" {
+		cfg.FavoritesFile = "favorites.json"
 	}
 
 	if raw := os.Getenv("REQUEST_TIMEOUT"); raw != "" {

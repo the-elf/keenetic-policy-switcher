@@ -2,3 +2,5 @@
 .git
 .idea
 docs/api-notes-raw
+favorites.json
+data/

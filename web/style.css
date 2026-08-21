@@ -121,6 +121,21 @@ body {
   gap: 12px;
 }
 
+.device-card__favorite {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--border);
+  cursor: pointer;
+}
+
+.device-card__favorite--active {
+  color: #f5a623;
+}
+
 .device-card__status {
   width: 10px;
   height: 10px;
@@ -166,6 +181,19 @@ body {
 
 .device-card__policy:disabled {
   opacity: 0.5;
+}
+
+.other-devices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.other-devices summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 6px 2px;
 }
 
 .toast-container {

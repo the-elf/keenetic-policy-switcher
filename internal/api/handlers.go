@@ -37,19 +37,29 @@ type KeeneticClient interface {
 	SetPolicy(ctx context.Context, mac, policyID string) error
 }
 
-// Handler holds the dependencies for the /api/* routes.
-type Handler struct {
-	client KeeneticClient
-	logger *log.Logger
+// FavoritesStore is the subset of *favorites.Store the HTTP handlers need.
+// Favorites are local server state (no router round-trip involved), so
+// these methods don't take a context.
+type FavoritesStore interface {
+	Contains(mac string) bool
+	Add(mac string) error
+	Remove(mac string) error
 }
 
-// NewHandler builds a Handler backed by client. If logger is nil,
-// log.Default() is used.
-func NewHandler(client KeeneticClient, logger *log.Logger) *Handler {
+// Handler holds the dependencies for the /api/* routes.
+type Handler struct {
+	client    KeeneticClient
+	favorites FavoritesStore
+	logger    *log.Logger
+}
+
+// NewHandler builds a Handler backed by client and favorites. If logger is
+// nil, log.Default() is used.
+func NewHandler(client KeeneticClient, favorites FavoritesStore, logger *log.Logger) *Handler {
 	if logger == nil {
 		logger = log.Default()
 	}
-	return &Handler{client: client, logger: logger}
+	return &Handler{client: client, favorites: favorites, logger: logger}
 }
 
 // Register wires the /api/* routes onto mux.
@@ -57,6 +67,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/devices", h.handleListDevices)
 	mux.HandleFunc("GET /api/policies", h.handleListPolicies)
 	mux.HandleFunc("POST /api/devices/{mac}/policy", h.handleSetPolicy)
+	mux.HandleFunc("POST /api/devices/{mac}/favorite", h.handleSetFavorite)
 }
 
 type devicesResponse struct {
@@ -70,6 +81,7 @@ type deviceDTO struct {
 	IP       string `json:"ip"`
 	Online   bool   `json:"online"`
 	PolicyID string `json:"policy_id"`
+	Favorite bool   `json:"favorite"`
 }
 
 // handleListDevices serves GET /api/devices. Per spec §7.5, a router that is
@@ -86,7 +98,14 @@ func (h *Handler) handleListDevices(w http.ResponseWriter, r *http.Request) {
 
 	dtos := make([]deviceDTO, 0, len(devices))
 	for _, d := range devices {
-		dtos = append(dtos, deviceDTO(d))
+		dtos = append(dtos, deviceDTO{
+			MAC:      d.MAC,
+			Name:     d.Name,
+			IP:       d.IP,
+			Online:   d.Online,
+			PolicyID: d.PolicyID,
+			Favorite: h.favorites.Contains(d.MAC),
+		})
 	}
 	writeJSON(w, http.StatusOK, devicesResponse{RouterOnline: true, Devices: dtos})
 }
@@ -149,6 +168,54 @@ func (h *Handler) handleSetPolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, setPolicyResponse{OK: true, MAC: mac, PolicyID: req.PolicyID})
+}
+
+type setFavoriteRequest struct {
+	// A pointer so a missing "favorite" key (nil) can be rejected instead of
+	// silently defaulting to false and un-favoriting the device — the same
+	// ambiguity handleSetPolicy avoids by requiring a non-empty policy_id.
+	Favorite *bool `json:"favorite"`
+}
+
+type setFavoriteResponse struct {
+	OK       bool   `json:"ok"`
+	MAC      string `json:"mac"`
+	Favorite bool   `json:"favorite"`
+}
+
+// handleSetFavorite serves POST /api/devices/{mac}/favorite. Unlike the
+// policy handler this never touches the router — it's purely local state —
+// so a store failure is a 500 (our disk), not a 502 (the router).
+func (h *Handler) handleSetFavorite(w http.ResponseWriter, r *http.Request) {
+	mac, ok := normalizeMAC(r.PathValue("mac"))
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid device mac")
+		return
+	}
+
+	var req setFavoriteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Favorite == nil {
+		writeError(w, http.StatusBadRequest, "favorite is required")
+		return
+	}
+
+	var err error
+	if *req.Favorite {
+		err = h.favorites.Add(mac)
+	} else {
+		err = h.favorites.Remove(mac)
+	}
+	if err != nil {
+		h.logger.Printf("SetFavorite(%s, %v): %v", mac, *req.Favorite, err)
+		writeError(w, http.StatusInternalServerError, "failed to save favorites")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, setFavoriteResponse{OK: true, MAC: mac, Favorite: *req.Favorite})
 }
 
 // normalizeMAC validates the {mac} path segment and canonicalizes it to
