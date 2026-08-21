@@ -12,7 +12,7 @@ services:
       # to the internet through the router — the service has full
       # administrative access to the router. Keep the host on a trusted
       # LAN, not facing the internet.
-      - "8080:8080"
+      - "${HOST_PORT:-8080}:${APP_PORT:-8080}"
     volumes:
       # Persists the favorites list across container recreation. Mounting
       # the *file* directly (`./favorites.json:/favorites.json`) doesn't

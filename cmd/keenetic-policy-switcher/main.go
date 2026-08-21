@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -110,7 +111,6 @@ func loadConfig() (config, error) {
 		KeeneticHost:     os.Getenv("KEENETIC_HOST"),
 		KeeneticLogin:    os.Getenv("KEENETIC_LOGIN"),
 		KeeneticPassword: os.Getenv("KEENETIC_PASSWORD"),
-		ListenAddr:       os.Getenv("LISTEN_ADDR"),
 		RequestTimeout:   defaultRequestTimeout,
 		FavoritesFile:    os.Getenv("FAVORITES_FILE"),
 	}
@@ -128,9 +128,11 @@ func loadConfig() (config, error) {
 		}
 	}
 
-	if cfg.ListenAddr == "" {
-		cfg.ListenAddr = ":8080"
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
 	}
+	cfg.ListenAddr = net.JoinHostPort(os.Getenv("APP_HOST"), port)
 
 	if cfg.FavoritesFile == "" {
 		cfg.FavoritesFile = "favorites.json"

@@ -60,7 +60,9 @@ port forward from the internet.
 | `KEENETIC_HOST` | yes | Router base URL, e.g. `http://192.168.1.1` |
 | `KEENETIC_LOGIN` | yes | Router admin login |
 | `KEENETIC_PASSWORD` | yes | Router admin password |
-| `LISTEN_ADDR` | no (default `:8080`) | Address and port the app listens on |
+| `APP_HOST` | no (default all interfaces) | Interface the app binds to. Running directly, set `127.0.0.1` to restrict access to this machine. **Leave empty under Docker Compose** — Docker's port publishing targets the container's external interface, not its loopback, so `127.0.0.1` here makes the container unreachable even through `HOST_PORT`. |
+| `APP_PORT` | no (default `8080`) | Port the app listens on. Under Docker Compose this is also the container side of the `HOST_PORT` mapping below, so change it here (not in `docker-compose.yml`) to move the app to a different port. |
+| `HOST_PORT` | no (default `8080`, Docker Compose only) | Host port the container's `APP_PORT` is published on. Lets you avoid a port already taken on the host without changing anything inside the container. |
 | `REQUEST_TIMEOUT` | no (default `10s`) | Timeout for requests to the router |
 | `FAVORITES_FILE` | no (default `favorites.json`) | Path to the JSON file storing the shared favorites list. `docker-compose.yml` sets this to `/data/favorites.json` and mounts `./data` for persistence — no need to set it by hand for Docker. |
 
